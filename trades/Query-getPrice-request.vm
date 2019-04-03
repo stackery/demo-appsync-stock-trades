@@ -1,7 +1,7 @@
 {
   "version": "2018-05-29",
   "method": "GET",
-  "resourcePath": "/query?function=TIME_SERIES_INTRADAY&symbol=MSFT&interval=5min&apikey=demo",
+  "resourcePath": "/query",
   "params":{
       "query": {
           "function": "GLOBAL_QUOTE",
