@@ -151,7 +151,7 @@
 * Create Trade
     ```graphql
     mutation createTrade {
-      createTrade(type: "BUY", symbol: "NTRS") {
+      createTrade(type: BUY, symbol: "NTRS") {
         id
         timestamp
         type
