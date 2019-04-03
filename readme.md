@@ -1,3 +1,4 @@
+### Setup
 1. Add GraphQL Api
     1. Update name to `Trades Api`
     1. Update schema location to `trades/schema.graphql`
@@ -125,3 +126,49 @@
         }
         ```
 1. Deploy!
+
+### Queries
+* Get Price
+    ```graphql
+    query getPrice {
+      getPrice(symbol: "NTRS") {
+        symbol
+        price
+      }
+    }
+    ```
+* Trade Subscription (in separate window)
+    ```graphql
+    subscription onCreateTrade {
+      onCreateTrade {
+        id
+        timestamp
+        type
+        symbol
+      }
+    }
+    ```
+* Create Trade
+    ```graphql
+    mutation createTrade {
+      createTrade(type: "BUY", symbol: "NTRS") {
+        id
+        timestamp
+        type
+        symbol
+      }
+    }
+    ```
+* List Trades
+    ```graphql
+    query listTrades {
+      listTrades {
+        items {
+          id
+          timestamp
+          type
+          symbol
+        }
+      }
+    }
+    ```
