@@ -1,0 +1,42 @@
+type Mutation {
+  createTrade(type: TransactionType!, symbol: String!): Trade
+}
+
+type Price {
+  symbol: String!
+  price: Float!
+}
+
+type Query {
+  getPrice(symbol: String!): Price
+  getTrade(id: ID!): [Trade]
+  listTrades(limit: Int, nextToken: String): TradesConnection
+}
+
+type Subscription {
+  onCreateTrade(
+    id: ID,
+    symbol: String,
+    timestamp: AWSDateTime,
+    price: Float,
+    type: String
+  ): Trade
+    @aws_subscribe(mutations: ["createTrade"])
+}
+
+type Trade {
+  id: ID!
+  type: TransactionType!
+  symbol: String!
+  timestamp: AWSDateTime!
+}
+
+type TradesConnection {
+  items: [Trade]
+  nextToken: String
+}
+
+enum TransactionType {
+  BUY
+  SELL
+}

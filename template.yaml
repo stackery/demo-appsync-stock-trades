@@ -1,3 +1,151 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Transform: 'AWS::Serverless-2016-10-31'
-Resources: {}
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  Graphql:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${StackTagName} Environment ${EnvironmentTagName}
+        - ResourceName: Trades Api
+      AuthenticationType: API_KEY
+      LogConfig:
+        FieldLogLevel: ERROR
+        CloudWatchLogsRoleArn: !GetAtt GraphqlLogsRole.Arn
+    Metadata:
+      StackeryName: Trades Api
+  GraphqlSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt Graphql.ApiId
+      DefinitionS3Location: trades/schema.graphql
+  GraphqlLogsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action: sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}-Graphql-logs
+      Policies:
+        - PolicyName: Log
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource:
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/appsync/apis/*
+                  - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/appsync/apis/*:log-stream:*
+  GraphqlQuerygetPriceResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      TypeName: Query
+      DataSourceName: !GetAtt GraphqlToHttpProxyDataSource.Name
+      RequestMappingTemplateS3Location: trades/Query-getPrice-request.vm
+      ResponseMappingTemplateS3Location: trades/Query-getPrice-response.vm
+      ApiId: !GetAtt Graphql.ApiId
+      FieldName: getPrice
+    DependsOn: GraphqlSchema
+  GraphqlQuerygetTradeResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      TypeName: Query
+      DataSourceName: !GetAtt GraphqlToTradesDataSource.Name
+      RequestMappingTemplateS3Location: trades/Query-getTrade-request.vm
+      ResponseMappingTemplateS3Location: trades/Query-getTrade-response.vm
+      ApiId: !GetAtt Graphql.ApiId
+      FieldName: getTrade
+    DependsOn: GraphqlSchema
+  GraphqlQuerylistTradesResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      TypeName: Query
+      DataSourceName: !GetAtt GraphqlToTradesDataSource.Name
+      RequestMappingTemplateS3Location: trades/Query-listTrades-request.vm
+      ResponseMappingTemplateS3Location: trades/Query-listTrades-response.vm
+      ApiId: !GetAtt Graphql.ApiId
+      FieldName: listTrades
+    DependsOn: GraphqlSchema
+  GraphqlMutationcreateTradeResolver:
+    Type: AWS::AppSync::Resolver
+    Properties:
+      TypeName: Mutation
+      DataSourceName: !GetAtt GraphqlToTradesDataSource.Name
+      RequestMappingTemplateS3Location: trades/Mutation-createTrade-request.vm
+      ResponseMappingTemplateS3Location: trades/Mutation-createTrade-response.vm
+      ApiId: !GetAtt Graphql.ApiId
+      FieldName: createTrade
+    DependsOn: GraphqlSchema
+  GraphqlToHttpProxyDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      Type: HTTP
+      ApiId: !GetAtt Graphql.ApiId
+      Name: https___www_alphavantage_co
+      HttpConfig:
+        Endpoint: https://www.alphavantage.co
+  Trades:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      TableName: !Sub ${AWS::StackName}-Trades
+  GraphqlToTradesDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn: !GetAtt GraphqlToTradesAccessRole.Arn
+      ApiId: !GetAtt Graphql.ApiId
+      Name: Trades
+      DynamoDBConfig:
+        TableName: !Ref Trades
+        AwsRegion: !Ref AWS::Region
+  GraphqlToTradesAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: appsync.amazonaws.com
+          Action: sts:AssumeRole
+      RoleName: !Sub ${AWS::StackName}-Graphql-to-Trades
+      Policies:
+        - PolicyName: Access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchGetItem
+                  - dynamodb:BatchWriteItem
+                Resource:
+                  - !GetAtt Trades.Arn
+                  - !Sub ${Trades.Arn}/index/*
+Parameters:
+  StackTagName:
+    Type: String
+    Description: Stack Name (injected by Stackery at deployment time)
+  EnvironmentTagName:
+    Type: String
+    Description: Environment Name (injected by Stackery at deployment time)
