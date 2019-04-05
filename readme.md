@@ -66,11 +66,11 @@
           "method": "GET",
           "resourcePath": "/query",
           "params":{
-              "query": {
-                  "function": "GLOBAL_QUOTE",
-                    "symbol": $util.toJson($ctx.args.symbol),
-                    "apikey": "5X9X1G1HBV4VA6B1"
-              }
+            "query": {
+              "function": "GLOBAL_QUOTE",
+              "symbol": $util.toJson($ctx.args.symbol),
+              "apikey": "demo"
+            }
           }
         }
         ```
@@ -85,35 +85,35 @@
             "price": $util.parseJson($ctx.result.body)["Global Quote"]["05. price"]
           }
         #else
-            $utils.appendError($ctx.result.body, $ctx.result.statusCode)
+          $utils.appendError($ctx.result.body, $ctx.result.statusCode)
         #end
         ```
 1. Edit Mutation createTrade
     * Request Template:
         ```vtl
         {
-            "version" : "2017-02-28",
-            "operation" : "PutItem",
-            "key" : {
-                ## If object "id" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)
-                "id": $util.dynamodb.toDynamoDBJson($util.autoId()),
-                "timestamp": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601())
-            },
-            "attributeValues" : {
-              "type": $util.dynamodb.toDynamoDBJson($ctx.args.type),
-              "symbol": $util.dynamodb.toDynamoDBJson($context.arguments.symbol)
-            }
+          "version" : "2017-02-28",
+          "operation" : "PutItem",
+          "key" : {
+            ## If object "id" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)
+            "id": $util.dynamodb.toDynamoDBJson($util.autoId()),
+          },
+          "attributeValues" : {
+            "type": $util.dynamodb.toDynamoDBJson($ctx.args.type),
+            "symbol": $util.dynamodb.toDynamoDBJson($context.arguments.symbol),
+            "timestamp": $util.dynamodb.toDynamoDBJson($util.time.nowISO8601())
+          }
         }
         ```
 1. Edit Query getTrade
     * Request Template:
         ```vtl
         {
-            "version": "2017-02-28",
-            "operation": "GetItem",
-            "key": {
-                "id": $util.dynamodb.toDynamoDBJson($ctx.args.id),
-            }
+          "version": "2017-02-28",
+          "operation": "GetItem",
+          "key": {
+            "id": $util.dynamodb.toDynamoDBJson($ctx.args.id),
+          }
         }
 1. Edit Query listTrades
     * Request Template:
@@ -131,7 +131,7 @@
 * Get Price
     ```graphql
     query getPrice {
-      getPrice(symbol: "NTRS") {
+      getPrice(symbol: "AMZN") {
         symbol
         price
       }
@@ -151,7 +151,7 @@
 * Create Trade
     ```graphql
     mutation createTrade {
-      createTrade(type: BUY, symbol: "NTRS") {
+      createTrade(type: BUY, symbol: "AMZN") {
         id
         timestamp
         type
